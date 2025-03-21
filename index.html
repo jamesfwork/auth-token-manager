@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auth Token Manager Bookmarklet</title>
+  </head>
+  <body>
+    <h1>Auth Token Manager Bookmarklet</h1>
+    <p>Drag the link below to your bookmarks bar to add the bookmarklet:</p>
+    <a
+      href="javascript:(function() {
+    function createButton(text, onClick, topOffset, leftOffset) {
+      const button = document.createElement('button');
+      button.textContent = text;
+      button.style.position = 'fixed';
+      button.style.top = topOffset + 'px';
+      button.style.right = leftOffset + 'px';
+      button.style.zIndex = 10000;
+      button.style.padding = '10px';
+      button.style.backgroundColor = '#007bff';
+      button.style.color = '#fff';
+      button.style.border = 'none';
+      button.style.borderRadius = '5px';
+      button.style.cursor = 'pointer';
+      button.onclick = onClick;
+      document.body.appendChild(button);
+      return button;
+    }
+
+    function addAnimation(button) {
+      button.style.animation = 'updateAnimation 0.5s';
+      button.addEventListener('animationend', () => {
+        button.style.animation = '';
+      });
+    }
+
+    function checkClipboardForAuthDataOnLoad() {
+      window.focus();
+      setTimeout(() => {
+        navigator.clipboard.readText().then(function(authData) {
+          if (authData) {
+            const { key, token } = JSON.parse(authData);
+            if (key && token) {
+              createUpdateButton();
+            }
+          }
+        });
+      }, 100);
+    }
+
+    function createUpdateButton(previouslyUpdated) {
+      const copyButton = document.querySelector('#copyButton');
+      copyButton.style.right = 125 + 'px';
+      copyButton.style.backgroundColor = '#28a745';
+      copyButton.textContent = previouslyUpdated ? '✔ Token Updated' : '✔ Token Copied';
+      previouslyUpdated && addAnimation(copyButton);
+      if (!previouslyUpdated) {
+        const updateButton = createButton('Copy again', updateAuthKeyAndToken, 10, 10);
+        updateButton.id = 'updateButton';
+      }
+    }
+
+    function focusAndReadClipboard() {
+      window.focus();
+      setTimeout(() => {
+        navigator.clipboard.readText().then(function(authData) {
+          if (!authData) {
+            alert('No auth data found in clipboard.');
+            return;
+          }
+          console.log('authData', authData);
+          try {
+            const { key, token } = JSON.parse(authData);
+            localStorage.setItem(key, token);
+            alert('Token set, happy developing!');
+          } catch (err) {
+            alert('Failed to parse auth data from clipboard: ' + err);
+          }
+        }).catch(function(err) {
+          alert('Failed to read auth data from clipboard: ' + err);
+        });
+      }, 100);
+    }
+
+    function focusAndWriteClipboard() {
+      window.focus();
+      setTimeout(() => {
+        navigator.clipboard.writeText('').then(function() {
+          if (window.location.pathname === '/login') {
+            window.location.href = '/my-profile';
+          }
+        }).catch(function(err) {
+          alert('Failed to clear clipboard: ' + err);
+        });
+      }, 100);
+    }
+
+    function copyAuthKeyAndToken() {
+      const authKeyPrefix = 'oxford-user:';
+      let authKey = null;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes(authKeyPrefix)) {
+          authKey = key;
+          break;
+        }
+      }
+      if (authKey) {
+        const token = localStorage.getItem(authKey);
+        if (token) {
+          const authData = JSON.stringify({ key: authKey, token: token });
+          window.focus();
+          setTimeout(() => {
+            navigator.clipboard.writeText(authData).then(
+              createUpdateButton(),
+              function(err) {
+                alert('Failed to copy auth key and token: ' + err);
+              }
+            );
+          }, 100);
+        } else {
+          alert('Token not found in localStorage.');
+        }
+      } else {
+        alert('Auth key not found in localStorage.');
+      }
+    }
+
+    function updateAuthKeyAndToken() {
+      const authKeyPrefix = 'oxford-user:';
+      let authKey = null;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes(authKeyPrefix)) {
+          authKey = key;
+          break;
+        }
+      }
+      if (authKey) {
+        const token = localStorage.getItem(authKey);
+        if (token) {
+          const authData = JSON.stringify({ key: authKey, token: token });
+          window.focus();
+          setTimeout(() => {
+            navigator.clipboard.writeText(authData).then(
+              function() {
+                createUpdateButton(true);
+              },
+              function(err) {
+                alert('Failed to update auth key and token: ' + err);
+              }
+            );
+          }, 100);
+        } else {
+          alert('Token not found in localStorage.');
+        }
+      } else {
+        alert('Auth key not found in localStorage.');
+      }
+    }
+
+    function pasteAuthKeyAndToken() {
+      focusAndReadClipboard();
+      focusAndWriteClipboard();
+    }
+
+    const copyButton = createButton('Copy token', copyAuthKeyAndToken, 10, 10);
+    copyButton.id = 'copyButton';
+    const pasteButton = createButton('Paste token', pasteAuthKeyAndToken, 52, 10);
+
+    checkClipboardForAuthDataOnLoad();
+
+    setTimeout(() => {
+      document.body.removeChild(copyButton);
+      const updateButton = document.querySelector('#updateButton');
+      if (updateButton) {
+        document.body.removeChild(updateButton);
+      }
+      document.body.removeChild(pasteButton);
+    }, 15000);
+
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes updateAnimation {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+      }
+    `;
+    document.head.appendChild(style);
+  })();"
+      >🔑 Token Manager</a
+    >
+  </body>
+</html>
