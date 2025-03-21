@@ -113,6 +113,7 @@
           window.focus();
           setTimeout(() => {
             navigator.clipboard.writeText(authData).then(
+              alert('Token grabbed, over to localhost!'),
               createUpdateButton(),
               function(err) {
                 alert('Failed to copy auth key and token: ' + err);
