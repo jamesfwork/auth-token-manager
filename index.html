@@ -3,195 +3,395 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Auth Token Manager Bookmarklet</title>
+    <title>Cinch Auth Token Helper Tool</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .container {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 500px;
+        width: 100%;
+      }
+
+      h1 {
+        font-size: 24px;
+        margin-bottom: 20px;
+      }
+
+      p {
+        font-size: 14px;
+        margin-bottom: 20px;
+      }
+
+      span p {
+        font-size: 14px;
+        margin-bottom: 10px;
+      }
+
+      label {
+        display: block;
+        font-size: 14px;
+        margin-bottom: 5px;
+      }
+
+      input[type="text"] {
+        width: calc(100% - 22px);
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      button {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      a {
+        margin-top: 20px;
+        font-size: 16px;
+        color: #007bff;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
   </head>
   <body>
-    <h1>Auth Token Manager Bookmarklet</h1>
-    <p>Drag the link below to your bookmarks bar to add the bookmarklet:</p>
-    <a
-      href="javascript:(function() {
-    function createButton(text, onClick, topOffset, leftOffset) {
-      const button = document.createElement('button');
-      button.textContent = text;
-      button.style.position = 'fixed';
-      button.style.top = topOffset + 'px';
-      button.style.right = leftOffset + 'px';
-      button.style.zIndex = 10000;
-      button.style.padding = '10px';
-      button.style.backgroundColor = '#007bff';
-      button.style.color = '#fff';
-      button.style.border = 'none';
-      button.style.borderRadius = '5px';
-      button.style.cursor = 'pointer';
-      button.onclick = onClick;
-      document.body.appendChild(button);
-      return button;
-    }
+    <div class="container">
+    <h1>Token Helper Tool</h1>
+    <div>
+      <p>If you're redirected to /login mid development (from a page other than the root), the tool will attemp to route back to the previous page post authentication</p>
+      <label for="startUrl">Choose a start url for fresh serves of the app:</label>
+      <input type="text" id="startUrl" name="startUrl" placeholder="/my-profile">
+      <button id="generateToolButton">Generate tool</button>
+    </div>
+    <span id="generated-tool" style="display: none">
+      <p>Drag the link below to your bookmarks bar to add the bookmarklet:</p>
+      <a id="bookmarkletLink" href="#">🔑 Token Manager</a>
+    </span>
+  </div>
 
-    function addAnimation(button) {
-      button.style.animation = 'updateAnimation 0.5s';
-      button.addEventListener('animationend', () => {
-        button.style.animation = '';
-      });
-    }
 
-    function checkClipboardForAuthDataOnLoad() {
-      window.focus();
-      setTimeout(() => {
-        navigator.clipboard.readText().then(function(authData) {
-          if (authData) {
-            const { key, token } = JSON.parse(authData);
-            if (key && token) {
-              createUpdateButton();
+    <script>
+      const styleContent = `
+        @keyframes updateAnimation {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+          100% { transform: scale(1); }
+        }
+
+        #toast {
+        visibility: hidden;
+        min-width: 250px;
+        margin-left: -125px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 2px;
+        padding: 16px;
+        position: fixed;
+        z-index: 1;
+        left: 50%;
+        bottom: 30px;
+        font-size: 17px;
+      }
+      #toast.show {
+        visibility: visible;
+        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+      }
+      @-webkit-keyframes fadein {
+        from {bottom: 0; opacity: 0;}
+        to {bottom: 30px; opacity: 1;}
+      }
+      @keyframes fadein {
+        from {bottom: 0; opacity: 0;}
+        to {bottom: 30px; opacity: 1;}
+      }
+      @-webkit-keyframes fadeout {
+        from {bottom: 30px; opacity: 1;}
+        to {bottom: 0; opacity: 0;}
+      }
+      @keyframes fadeout {
+        from {bottom: 30px; opacity: 1;}
+        to {bottom: 0; opacity: 0;}
+      }
+      `;
+
+
+
+      document.getElementById('generateToolButton').addEventListener('click', function() {
+        const startUrl = document.getElementById('startUrl').value || '/my-profile';
+        const bookmarkletCode = `
+          javascript:(function() {
+            const style = document.createElement('style');
+            style.innerHTML = \`${styleContent}\`;
+            document.head.appendChild(style);
+
+            function showToast(message) {
+              let toast = document.querySelector('#toast');
+              if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast';
+                }       
+                
+                toast.textContent = message;
+                toast.className = 'show';
+                document.body.appendChild(toast);
+                setTimeout(() => {
+                  toast.className = toast.className.replace('show', '');
+                }, 3000);
             }
-          }
-        });
-      }, 100);
-    }
 
-    function createUpdateButton(previouslyUpdated) {
-      const copyButton = document.querySelector('#copyButton');
-      copyButton.style.right = 125 + 'px';
-      copyButton.style.backgroundColor = '#28a745';
-      copyButton.textContent = previouslyUpdated ? '✔ Token Updated' : '✔ Token Copied';
-      previouslyUpdated && addAnimation(copyButton);
-      if (!previouslyUpdated) {
-        const updateButton = createButton('Copy again', updateAuthKeyAndToken, 10, 10);
-        updateButton.id = 'updateButton';
-      }
-    }
+            function createButton(text, onClick, topOffset, leftOffset) {
+              const button = document.createElement('button');
+              button.textContent = text;
+              button.style.position = 'fixed';
+              button.style.top = topOffset + 'px';
+              button.style.right = leftOffset + 'px';
+              button.style.zIndex = 10000;
+              button.style.padding = '10px';
+              button.style.backgroundColor = '#007bff';
+              button.style.color = '#fff';
+              button.style.border = 'none';
+              button.style.borderRadius = '5px';
+              button.style.cursor = 'pointer';
+              button.onclick = onClick;
+              document.body.appendChild(button);
+              return button;
+            }
 
-    function focusAndReadClipboard() {
-      window.focus();
-      setTimeout(() => {
-        navigator.clipboard.readText().then(function(authData) {
-          if (!authData) {
-            alert('No auth data found in clipboard.');
-            return;
-          }
-          console.log('authData', authData);
-          try {
-            const { key, token } = JSON.parse(authData);
-            localStorage.setItem(key, token);
-            alert('Token set, happy developing!');
-          } catch (err) {
-            alert('Failed to parse auth data from clipboard: ' + err);
-          }
-        }).catch(function(err) {
-          alert('Failed to read auth data from clipboard: ' + err);
-        });
-      }, 100);
-    }
+            function addAnimation(button) {
+              button.style.animation = 'updateAnimation 0.5s';
+              button.addEventListener('animationend', function() {
+                button.style.animation = '';
+              });
+            }
 
-    function focusAndWriteClipboard() {
-      window.focus();
-      setTimeout(() => {
-        navigator.clipboard.writeText('').then(function() {
-          if (window.location.pathname === '/login') {
-            window.location.href = '/my-profile';
-          }
-        }).catch(function(err) {
-          alert('Failed to clear clipboard: ' + err);
-        });
-      }, 100);
-    }
+            function checkClipboardForAuthDataOnLoad() {
+              window.focus();
+              navigator.permissions.query({ name: 'clipboard-write' }).then(function(result) {
+                if (result.state === 'granted' || result.state === 'prompt') {
+                  setTimeout(function() {
+                    navigator.clipboard.readText().then(function(authData) {
+                      if (authData) {
+                        const { key, token } = JSON.parse(authData);
+                        if (key && token) {
+                          createUpdateButton();
+                        }
+                      }
+                    });
+                  }, 100);
+                } else {
+                  showToast('Clipboard write permission denied.');
+                }
+              });
+            }
 
-    function copyAuthKeyAndToken() {
-      const authKeyPrefix = 'oxford-user:';
-      let authKey = null;
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.includes(authKeyPrefix)) {
-          authKey = key;
-          break;
-        }
-      }
-      if (authKey) {
-        const token = localStorage.getItem(authKey);
-        if (token) {
-          const authData = JSON.stringify({ key: authKey, token: token });
-          window.focus();
-          setTimeout(() => {
-            navigator.clipboard.writeText(authData).then(
-              alert('Token grabbed, over to localhost!'),
-              createUpdateButton(),
-              function(err) {
-                alert('Failed to copy auth key and token: ' + err);
+            function createUpdateButton(previouslyUpdated) {
+              const copyButton = document.querySelector('#copyButton');
+              copyButton.style.right = '125px';
+              copyButton.style.backgroundColor = '#28a745';
+              copyButton.textContent = previouslyUpdated ? '✔ Token Updated' : '✔ Token Copied';
+              copyButton.onclick = null;
+              if (previouslyUpdated) addAnimation(copyButton);
+              if (!previouslyUpdated) {
+                const updateButtonClickListener = function() {
+                  navigator.permissions.query({ name: 'clipboard-write' }).then(function(result) {
+                    if (result.state === 'granted' || result.state === 'prompt') {
+                      updateAuthKeyAndToken();
+                    } else {
+                      showToast('Clipboard write permission denied.');
+                    }
+                  });
+                };
+
+                const updateButton = createButton('Copy again', updateButtonClickListener, 10, 10);
+                updateButton.id = 'updateButton';
+                updateButton.style.backgroundColor = '#581D95';
               }
-            );
-          }, 100);
-        } else {
-          alert('Token not found in localStorage.');
-        }
-      } else {
-        alert('Auth key not found in localStorage.');
-      }
-    }
+            }
 
-    function updateAuthKeyAndToken() {
-      const authKeyPrefix = 'oxford-user:';
-      let authKey = null;
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.includes(authKeyPrefix)) {
-          authKey = key;
-          break;
-        }
-      }
-      if (authKey) {
-        const token = localStorage.getItem(authKey);
-        if (token) {
-          const authData = JSON.stringify({ key: authKey, token: token });
-          window.focus();
-          setTimeout(() => {
-            navigator.clipboard.writeText(authData).then(
-              function() {
-                createUpdateButton(true);
-              },
-              function(err) {
-                alert('Failed to update auth key and token: ' + err);
+            function focusAndReadClipboard() {
+              window.focus();
+              setTimeout(function() {
+                navigator.clipboard.readText().then(function(authData) {
+                  if (!authData) {
+                    showToast('No auth data found in clipboard.');
+                    return;
+                  }
+                  try {
+                    const { key, token } = JSON.parse(authData);
+                    localStorage.setItem(key, token);
+                    showToast('Token set, happy developing!');
+                    return;
+                  } catch (err) {
+                    showToast('Failed to parse auth data from clipboard: ' + err);
+                    return;
+                  }
+                }).catch(function(err) {
+                  showToast('Failed to read auth data from clipboard: ' + err);
+                  return;
+                });
+              }, 100);
+            }
+
+            function focusAndWriteClipboard() {
+              window.focus();
+              setTimeout(function() {
+                navigator.clipboard.writeText('').then(function() {
+                  if (window.location.pathname === '/login') {
+                    if (window.history.length > 1 && document.referrer !== 'https://localhost:4200/') {
+                      setTimeout(() => window.history.back(), 1000);
+                    } else {
+                      setTimeout(() => window.location.href = '${startUrl}', 1000);
+                    }
+                  }
+                }).catch(function(err) {
+                  showToast('Failed to clear clipboard: ' + err);
+                });
+              }, 100);
+            }
+
+            function copyAuthKeyAndToken() {
+              const authKeyPrefix = 'oxford-user:';
+              let authKey = null;
+              for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.includes(authKeyPrefix)) {
+                  authKey = key;
+                  break;
+                }
               }
-            );
-          }, 100);
-        } else {
-          alert('Token not found in localStorage.');
-        }
-      } else {
-        alert('Auth key not found in localStorage.');
-      }
-    }
+              if (authKey) {
+                const token = localStorage.getItem(authKey);
+                if (token) {
+                  const authData = JSON.stringify({ key: authKey, token: token });
+                  window.focus();
+                  setTimeout(function() {
+                    navigator.clipboard.writeText(authData).then(
+                      function() {
+                        showToast('Token grabbed, over to localhost!');
+                        const updateButton = document.querySelector('#updateButton');
+                        if (!updateButton) {
+                          createUpdateButton();
+                        }
+                      },
+                      function(err) {
+                        showToast('Failed to copy auth key and token: ' + err);
+                      }
+                    );
+                  }, 100);
+                } else {
+                  showToast('Token not found in localStorage.');
+                }
+              } else {
+                showToast('Auth key not found in localStorage.');
+              }
+            }
 
-    function pasteAuthKeyAndToken() {
-      focusAndReadClipboard();
-      focusAndWriteClipboard();
-    }
+            function updateAuthKeyAndToken() {
+              const authKeyPrefix = 'oxford-user:';
+              let authKey = null;
+              for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.includes(authKeyPrefix)) {
+                  authKey = key;
+                  break;
+                }
+              }
+              if (authKey) {
+                const token = localStorage.getItem(authKey);
+                if (token) {
+                  const authData = JSON.stringify({ key: authKey, token: token });
+                  window.focus();
+                  setTimeout(function() {
+                    navigator.clipboard.writeText(authData).then(
+                      function() {
+                        const copyButton = document.querySelector('#copyButton');
+                        copyButton.textContent = '✔ Token Updated';
+                        addAnimation(copyButton);
+                      },
+                      function(err) {
+                        showToast('Failed to update auth key and token: ' + err);
+                      }
+                    );
+                  }, 100);
+                } else {
+                  showToast('Token not found in localStorage.');
+                }
+              } else {
+                showToast('Auth key not found in localStorage.');
+              }
+            }
 
-    const copyButton = createButton('Copy token', copyAuthKeyAndToken, 10, 10);
-    copyButton.id = 'copyButton';
-    const pasteButton = createButton('Paste token', pasteAuthKeyAndToken, 52, 10);
+            function pasteAuthKeyAndToken() {
+              focusAndReadClipboard();
+              focusAndWriteClipboard();
+            }
 
-    checkClipboardForAuthDataOnLoad();
+            const copyButtonClickListener = function() {
+              navigator.permissions.query({ name: 'clipboard-write' }).then(function(result) {
+                if (result.state === 'granted' || result.state === 'prompt') {
+                  copyAuthKeyAndToken();
+                } else {
+                  showToast('Clipboard write permission denied.');
+                }
+              });
+            };
+            const copyButton = createButton('Copy token', copyButtonClickListener, 10, 10);
+            copyButton.id = 'copyButton';
 
-    setTimeout(() => {
-      document.body.removeChild(copyButton);
-      const updateButton = document.querySelector('#updateButton');
-      if (updateButton) {
-        document.body.removeChild(updateButton);
-      }
-      document.body.removeChild(pasteButton);
-    }, 15000);
+            const pasteButtonClickListener = function() {
+              navigator.permissions.query({ name: 'clipboard-read' }).then(function(result) {
+                if (result.state === 'granted' || result.state === 'prompt') {
+                  pasteAuthKeyAndToken();
+                } else {
+                  showToast('Clipboard read permission denied.');
+                }
+              });
+            };
+            const pasteButton = createButton('Paste token', pasteButtonClickListener, 52, 10);
 
-    const style = document.createElement('style');
-    style.innerHTML = `
-      @keyframes updateAnimation {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.1); }
-        100% { transform: scale(1); }
-      }
-    `;
-    document.head.appendChild(style);
-  })();"
-      >🔑 Token Manager</a
-    >
+            checkClipboardForAuthDataOnLoad();
+
+            setTimeout(function() {
+              document.body.removeChild(copyButton);
+              const updateButton = document.querySelector('#updateButton');
+              if (updateButton) {
+                document.body.removeChild(updateButton);
+              }
+              document.body.removeChild(pasteButton);
+            }, 15000);
+          })();
+        `;
+        document.getElementById('bookmarkletLink').href = bookmarkletCode;
+        document.getElementById('generated-tool').style.display = 'block';
+      });
+    </script>
   </body>
 </html>
