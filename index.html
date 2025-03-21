@@ -88,7 +88,7 @@
       setTimeout(() => {
         navigator.clipboard.writeText('').then(function() {
           if (window.location.pathname === '/login') {
-            window.location.href = '/my-profile';
+            window.history.back();
           }
         }).catch(function(err) {
           alert('Failed to clear clipboard: ' + err);
